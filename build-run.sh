@@ -1,3 +1,0 @@
-rustc solver.rs
-./solver
-

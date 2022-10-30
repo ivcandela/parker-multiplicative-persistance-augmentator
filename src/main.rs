@@ -1,20 +1,35 @@
 use itertools::Itertools;
 
-#[allow(dead_code)]
 fn main() {
-    let number_to_find: u128 = 277777788888899;
+    let number_to_find: u128 = 277777788888899; // # of unique permutations = 1_261_260
+    //let number_to_find: u128 = 4996238671872;
+    //let number_to_find: u128 = 3*3*5*7;
 
     let digits = num_to_digits(number_to_find);
-
-    print_vector(digits);
-    println!("{}", digits_to_num(digits));
-    return;
-
+    let mut permutations_checked = 0u64;
     for perm in digits.iter().permutations(digits.len()).unique() {
-        let result: Vec<u8> = try_to_find_single_digit_divisors(number_to_find);
+        if *perm[0] == 0 {
+            continue;
+        }
+        permutations_checked += 1;
+        if permutations_checked % 100 == 0 {
+            println!("{}", permutations_checked);
+        }
+
+        let current_permutation = digits_to_num(perm);
+        
+        let result: Vec<u8> = try_to_find_single_digit_divisors(current_permutation);
 
         if result.len() > 0 {
-            print_vector(result);
+            let mut check: u128 = 1;
+            for &d in result.iter() {
+                check *= d as u128;
+            }
+
+            if check == current_permutation {
+                print!("{} -> ", current_permutation);
+                print_vector(result);
+            }
         }
     }
 }
@@ -44,13 +59,13 @@ fn try_to_find_single_digit_divisors(number: u128) -> Vec<u8> {
     return Vec::<u8>::new();
 }
 
-fn digits_to_num(digits: Vec<u8>) -> u128 {
+fn digits_to_num(digits: Vec<&u8>) -> u128 {
     let mut result: u128 = 0;
-    let mut i: u64 = 0;
+    let mut i: u32 = digits.len().try_into().unwrap();
 
-    for d in digits.iter() {
-        result += (d * u128::pow(10, i));
-        i += 1;
+    for &d in digits.iter() {
+        i -= 1;
+        result += *d as u128 * 10u128.pow(i);
     }
 
     return result;
@@ -75,13 +90,13 @@ fn num_to_digits(num: u128) -> Vec<u8> {
         } else {
             let current = x % 10;
             x /= 10;
-            Some(current)
+            Some(current as u8)
         }
     })
     .collect::<Vec<u8>>();
 
     result.reverse();
-    result
+    return result;
 }
 
 fn print_vector(vector: Vec<u8>) {
