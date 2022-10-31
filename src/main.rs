@@ -1,26 +1,34 @@
 use itertools::Itertools;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 enum ParkerSuccess { //Error
     DeadEnd,
 }
 
 fn main() {
-    let number_to_find: u128 = 277777788888899; // # of unique permutations = 1_261_260
+    let cache = Arc::new(Mutex::new(HashMap::new())); // Thanks Sitepoint https://www.sitepoint.com/rust-global-variables/
+
+    let number_to_find: u128 = 2*7*5*3;//277777788888899;
+    let total_permutations: u64 = 1261260;
 
     let digits = num_to_digits(number_to_find);
     let mut permutations_checked = 0u64;
+
     for perm in digits.iter().permutations(digits.len()).unique() {
         if *perm[0] == 0 {
             continue;
         }
         permutations_checked += 1;
         if permutations_checked % 100 == 0 {
-            println!("{}", permutations_checked);
+            println!("{} / {} ({:.2}%)", permutations_checked, total_permutations, permutations_checked/total_permutations);
         }
 
         let current_permutation = digits_to_num(perm);
-        
-        let result: Vec<u8> = match try_to_find_single_digit_divisors(current_permutation) {
+
+        // closurable
+        let result: Vec<u8> = match try_to_find_single_digit_divisors(current_permutation, Arc::clone(&cache)) {
             Ok(ans) => ans,
             Err(_) => Vec::<u8>::new(),
         };
@@ -32,18 +40,39 @@ fn main() {
             }
 
             if check == current_permutation {
-                print!("{} -> ", current_permutation);
-                print_vector(result);
+                print!("Perm: {} -> ", current_permutation);
+                print_result(result);
             }
         }
+        // end closurable
     }
 }
 
-fn try_to_find_single_digit_divisors(number: u128) -> Result<Vec<u8>, ParkerSuccess> {
+fn try_to_find_single_digit_divisors(number: u128, cache: Arc<Mutex<HashMap<String, Vec<u8>>>>) -> Result<Vec<u8>, ParkerSuccess> {
+    println!("Number {}", number);
+    
+    let c = cache.lock().unwrap();
+    if c.contains_key(&number.to_string()) {
+        let cache_result = match c.get(&number.to_string()) {
+            Some(cr) => cr.to_vec(),
+            None => panic!("This shouldn't happen")
+        };
+
+        if cache_result.len() > 0 {
+            println!("Cache Hit! {}", number);
+            return Ok(cache_result);
+        } else {
+            return Err(ParkerSuccess::DeadEnd);
+        }
+    }
+    drop(c);
+
     if number < 10 {
+        println!("Cache Save! {}", number);
+        cache.lock().unwrap().insert(number.to_string(), vec![number as u8]);
         return Ok(vec![number as u8]);
     }
-
+    
     let mut i = 1u128;
     let max_iteration: u128 = (number as f64).sqrt().ceil() as u128;
     
@@ -54,13 +83,26 @@ fn try_to_find_single_digit_divisors(number: u128) -> Result<Vec<u8>, ParkerSucc
             continue;
         }
 
-        let mut bag_of_numbers: Vec<u8> = try_to_find_single_digit_divisors(i)?;
-        let other_bag_of_numbers: Vec<u8> = try_to_find_single_digit_divisors(u128::from(number / i))?;
+        println!("Going down from {} to {}", number, i);
+        let mut bag_of_numbers: Vec<u8> = try_to_find_single_digit_divisors(i, Arc::clone(&cache))?;
+
+        println!("Going down from {} to {}", number, u128::from(number / i));
+        let other_bag_of_numbers: Vec<u8> = try_to_find_single_digit_divisors(u128::from(number / i), Arc::clone(&cache))?;
+        
         bag_of_numbers.extend(other_bag_of_numbers);
+
+        print!("Cache Save! ");
+        for n in bag_of_numbers.iter() {
+            print!("{}", n);
+        }
+        println!("");
+
+        cache.lock().unwrap().insert(number.to_string(), bag_of_numbers.clone());
 
         return Ok(bag_of_numbers);
     }
-
+    println!("Cache Save! DeadEnd");
+    cache.lock().unwrap().insert(number.to_string(), Vec::<u8>::new());
     return Err(ParkerSuccess::DeadEnd);
 }
 
@@ -105,7 +147,7 @@ fn num_to_digits(num: u128) -> Vec<u8> {
     return result;
 }
 
-fn print_vector(vector: Vec<u8>) {
+fn print_result(vector: Vec<u8>) {
     print!("Result!! -> ");
     for v in vector.iter() {
         print!("{}", v);
