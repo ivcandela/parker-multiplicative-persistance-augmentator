@@ -1,8 +1,9 @@
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::thread;
 
-enum ParkerSuccess { //Error
+enum ParkerSuccess { // Error
     DeadEnd,
 }
 
@@ -15,33 +16,45 @@ fn main() {
     let digits = num_to_digits(number_to_find);
     let mut permutations_checked = 0u64;
 
+    let mut join_handles = Vec::<std::thread::JoinHandle<()>>::new();
+
     for perm in digits.iter().permutations(digits.len()).unique() {
         if *perm[0] == 0 {
             continue;
         }
+
         permutations_checked += 1;
         if permutations_checked % 100 == 0 {
             println!("{} / {} ({:.2}%)", permutations_checked, total_permutations, permutations_checked/total_permutations);
         }
 
         let current_permutation = digits_to_num(perm);
+        let cache_clone = Arc::clone(&cache);
 
-        let result: Vec<u8> = match try_to_find_single_digit_divisors(current_permutation, Arc::clone(&cache)) {
-            Ok(ans) => ans,
-            Err(_) => Vec::<u8>::new(),
-        };
+        let jh = thread::spawn(move || {
+            let result: Vec<u8> = match try_to_find_single_digit_divisors(current_permutation, cache_clone) {
+                Ok(ans) => ans,
+                Err(_) => Vec::<u8>::new(),
+            };
 
-        if result.len() > 0 {
-            let mut check: u128 = 1;
-            for &d in result.iter() {
-                check *= d as u128;
+            if result.len() > 0 {
+                let mut check: u128 = 1;
+                for &d in result.iter() {
+                    check *= d as u128;
+                }
+
+                if check == current_permutation {
+                    print!("Perm: {} -> ", current_permutation);
+                    print_result(result);
+                }
             }
 
-            if check == current_permutation {
-                print!("Perm: {} -> ", current_permutation);
-                print_result(result);
-            }
-        }
+        });
+
+        join_handles.push(jh);
+    }
+    for jh in join_handles.into_iter() {
+        jh.join().unwrap();
     }
 }
 

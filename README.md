@@ -61,8 +61,6 @@ If any sub-computation ends up in a dead-end (no single-digit divisor found) the
 
 ### Computation Caching 
 
-_(Python version only, still TODO in Rust version)_
-
 Second, every call to `try_to_find_single_digit_divisors` can be a pure function (if we ignore caching itself) so simply caching the results would save a lot of duplicate execution time
 
 ### Permutations Check
@@ -73,6 +71,10 @@ The idea is that, given the nature of the problem, **a solution to a "permutatio
 By permutation I mean of its digits of course.
 
 That would mean that other than M, I have to check also all of the unique permutations of its digits, which in the case of 277777788888899 are 1261260 in mumber (see what I mean by more challenging?)
+
+### Multithreading
+
+Keeping the execution as parallelizable sounds smart I guess.
 
 ### Rust rewrite
 
