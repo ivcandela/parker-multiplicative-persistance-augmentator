@@ -10,7 +10,7 @@ enum ParkerSuccess { //Error
 fn main() {
     let cache = Arc::new(Mutex::new(HashMap::new())); // Thanks Sitepoint https://www.sitepoint.com/rust-global-variables/
 
-    let number_to_find: u128 = 2*7*5*3;//277777788888899;
+    let number_to_find: u128 = 277777788888899;
     let total_permutations: u64 = 1261260;
 
     let digits = num_to_digits(number_to_find);
