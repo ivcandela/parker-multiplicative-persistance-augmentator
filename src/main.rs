@@ -1,9 +1,11 @@
 use itertools::Itertools;
 
+enum ParkerSuccess { //Error
+    DeadEnd,
+}
+
 fn main() {
     let number_to_find: u128 = 277777788888899; // # of unique permutations = 1_261_260
-    //let number_to_find: u128 = 4996238671872;
-    //let number_to_find: u128 = 3*3*5*7;
 
     let digits = num_to_digits(number_to_find);
     let mut permutations_checked = 0u64;
@@ -18,7 +20,10 @@ fn main() {
 
         let current_permutation = digits_to_num(perm);
         
-        let result: Vec<u8> = try_to_find_single_digit_divisors(current_permutation);
+        let result: Vec<u8> = match try_to_find_single_digit_divisors(current_permutation) {
+            Ok(ans) => ans,
+            Err(_) => Vec::<u8>::new(),
+        };
 
         if result.len() > 0 {
             let mut check: u128 = 1;
@@ -34,9 +39,9 @@ fn main() {
     }
 }
 
-fn try_to_find_single_digit_divisors(number: u128) -> Vec<u8> {
+fn try_to_find_single_digit_divisors(number: u128) -> Result<Vec<u8>, ParkerSuccess> {
     if number < 10 {
-        return vec![number as u8];
+        return Ok(vec![number as u8]);
     }
 
     let mut i = 1u128;
@@ -49,14 +54,14 @@ fn try_to_find_single_digit_divisors(number: u128) -> Vec<u8> {
             continue;
         }
 
-        let mut bag_of_numbers: Vec<u8> = try_to_find_single_digit_divisors(i);
-        let other_bag_of_numbers: Vec<u8> = try_to_find_single_digit_divisors(u128::from(number / i));
+        let mut bag_of_numbers: Vec<u8> = try_to_find_single_digit_divisors(i)?;
+        let other_bag_of_numbers: Vec<u8> = try_to_find_single_digit_divisors(u128::from(number / i))?;
         bag_of_numbers.extend(other_bag_of_numbers);
 
-        return bag_of_numbers;
+        return Ok(bag_of_numbers);
     }
 
-    return Vec::<u8>::new();
+    return Err(ParkerSuccess::DeadEnd);
 }
 
 fn digits_to_num(digits: Vec<&u8>) -> u128 {
@@ -74,6 +79,7 @@ fn digits_to_num(digits: Vec<&u8>) -> u128 {
 fn num_to_digits(num: u128) -> Vec<u8> {
     /*
      * From: https://codereview.stackexchange.com/a/226357 
+     *
      * Zero is a special case because
      * it is the terminating value of the unfold below,
      * but given a 0 as input, [0] is expected as output.
