@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::thread;
 
 enum ParkerSuccess { //Error
     DeadEnd,
@@ -27,7 +26,6 @@ fn main() {
 
         let current_permutation = digits_to_num(perm);
 
-        // closurable
         let result: Vec<u8> = match try_to_find_single_digit_divisors(current_permutation, Arc::clone(&cache)) {
             Ok(ans) => ans,
             Err(_) => Vec::<u8>::new(),
@@ -44,13 +42,10 @@ fn main() {
                 print_result(result);
             }
         }
-        // end closurable
     }
 }
 
-fn try_to_find_single_digit_divisors(number: u128, cache: Arc<Mutex<HashMap<String, Vec<u8>>>>) -> Result<Vec<u8>, ParkerSuccess> {
-    println!("Number {}", number);
-    
+fn try_to_find_single_digit_divisors(number: u128, cache: Arc<Mutex<HashMap<String, Vec<u8>>>>) -> Result<Vec<u8>, ParkerSuccess> {    
     let c = cache.lock().unwrap();
     if c.contains_key(&number.to_string()) {
         let cache_result = match c.get(&number.to_string()) {
@@ -59,7 +54,6 @@ fn try_to_find_single_digit_divisors(number: u128, cache: Arc<Mutex<HashMap<Stri
         };
 
         if cache_result.len() > 0 {
-            println!("Cache Hit! {}", number);
             return Ok(cache_result);
         } else {
             return Err(ParkerSuccess::DeadEnd);
@@ -68,7 +62,6 @@ fn try_to_find_single_digit_divisors(number: u128, cache: Arc<Mutex<HashMap<Stri
     drop(c);
 
     if number < 10 {
-        println!("Cache Save! {}", number);
         cache.lock().unwrap().insert(number.to_string(), vec![number as u8]);
         return Ok(vec![number as u8]);
     }
@@ -83,25 +76,15 @@ fn try_to_find_single_digit_divisors(number: u128, cache: Arc<Mutex<HashMap<Stri
             continue;
         }
 
-        println!("Going down from {} to {}", number, i);
         let mut bag_of_numbers: Vec<u8> = try_to_find_single_digit_divisors(i, Arc::clone(&cache))?;
-
-        println!("Going down from {} to {}", number, u128::from(number / i));
         let other_bag_of_numbers: Vec<u8> = try_to_find_single_digit_divisors(u128::from(number / i), Arc::clone(&cache))?;
         
         bag_of_numbers.extend(other_bag_of_numbers);
-
-        print!("Cache Save! ");
-        for n in bag_of_numbers.iter() {
-            print!("{}", n);
-        }
-        println!("");
 
         cache.lock().unwrap().insert(number.to_string(), bag_of_numbers.clone());
 
         return Ok(bag_of_numbers);
     }
-    println!("Cache Save! DeadEnd");
     cache.lock().unwrap().insert(number.to_string(), Vec::<u8>::new());
     return Err(ParkerSuccess::DeadEnd);
 }
