@@ -2,7 +2,7 @@
 
 A tool to find a number with a greater multiplicative persistence of any* input
 
-_This is an exercise project to have fun and also learn some Rust_ 
+_This is an exercise project to have fun and also learn some Rust_  
 _A slower python version is in its own branch._
 
 ## The Inspiration
@@ -52,6 +52,14 @@ Since the basic approach is terribly slow, I had to come up with some improvemen
 
 First, if you have to find divisors of a number  **M**, you don't need to check every number to **M**-1, but only up to `ceil(sqrt( **M** ))`, over that you're double-checking. 
 This was a big improvement, but we were still too slow for numbers like 277777788888899
+
+
+### Dead-ends 
+
+_(Python version only, still TODO in Rust version)_
+
+If any sub-computation ends up in a dead-end (no single-digit divisor found) the whole current stack can be considered a dead end and there's no reason to keep checking it
+
 
 ### Computation Caching 
 
